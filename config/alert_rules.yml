@@ -1,0 +1,83 @@
+# Prometheus Alert Rules
+groups:
+  - name: ecommerce_ai_agent_alerts
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(ecommerce_requests_total{status_code=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} requests per second for the last 5 minutes"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(ecommerce_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }} seconds"
+
+      # Agent operation failures
+      - alert: AgentOperationFailures
+        expr: rate(ecommerce_agent_operations_total{status="error"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High agent operation failure rate"
+          description: "Agent {{ $labels.agent_type }} operation {{ $labels.operation }} failure rate is {{ $value }}"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: ecommerce_system_cpu_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: ecommerce_system_memory_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%"
+
+      # Low active users (business metric)
+      - alert: LowActiveUsers
+        expr: ecommerce_active_users < 10
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low active user count"
+          description: "Active users count is {{ $value }}"
+
+      # Vertex AI request failures
+      - alert: VertexAIFailures
+        expr: rate(ecommerce_vertex_ai_requests_total{status="error"}[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High Vertex AI failure rate"
+          description: "Vertex AI requests failing at {{ $value }} requests per second"
+
+      # Service down
+      - alert: ServiceDown
+        expr: up{job="ecommerce-ai-agent"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "E-Commerce AI Agent service is down"
+          description: "The main application service has been down for more than 1 minute"

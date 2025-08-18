@@ -1,0 +1,74 @@
+# Google App Engine configuration for E-Commerce AI Agent
+runtime: python311
+
+# Instance configuration
+instance_class: F4_1G
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+  target_throughput_utilization: 0.6
+
+# Network configuration
+vpc_access_connector:
+  name: projects/PROJECT_ID/locations/REGION/connectors/CONNECTOR_NAME
+
+# Environment variables
+env_variables:
+  GOOGLE_CLOUD_PROJECT: "your-project-id"
+  LOCATION: "us-central1"
+  VERTEX_AI_MODEL: "gemini-1.5-pro"
+  VERTEX_AI_TEMPERATURE: "0.7"
+  VERTEX_AI_MAX_TOKENS: "8192"
+  FIRESTORE_DATABASE: "(default)"
+  FIRESTORE_COLLECTION_PRODUCTS: "products"
+  FIRESTORE_COLLECTION_USERS: "users"
+  FIRESTORE_COLLECTION_ORDERS: "orders"
+  GCS_BUCKET_NAME: "your-bucket-name"
+  GCS_PRODUCT_IMAGES_PATH: "product-images/"
+  VISION_API_ENABLED: "true"
+  VISION_CONFIDENCE_THRESHOLD: "0.7"
+  TRANSLATION_API_ENABLED: "true"
+  DEFAULT_LANGUAGE: "tr"
+  REDIS_HOST: "10.0.0.1"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8080"
+  API_VERSION: "v1"
+  AGENT_MAX_ITERATIONS: "10"
+  AGENT_TIMEOUT_SECONDS: "30"
+  ENABLE_MEMORY: "true"
+  MEMORY_TYPE: "firestore"
+  ENABLE_MONITORING: "true"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+
+# Handlers
+handlers:
+  # Static files
+  - url: /static
+    static_dir: static
+    secure: always
+
+  # API routes
+  - url: /.*
+    script: auto
+    secure: always
+
+# Skip files
+skip_files:
+  - ^(.*/)?#.*#$
+  - ^(.*/)?.*~$
+  - ^(.*/)?.*\.py[co]$
+  - ^(.*/)?.*/RCS/.*$
+  - ^(.*/)?\..*$
+  - ^(.*/)?tests/.*$
+  - ^(.*/)?test_.*$
+  - node_modules/
+  - .git/
+  - .gitignore
+  - README.md
+  - Dockerfile
+  - docker-compose.yml
+  - .env*

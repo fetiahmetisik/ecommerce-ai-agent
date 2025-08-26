@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 import json
 import base64
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,13 +26,40 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Global agent instances
+orchestrator: Optional['ECommerceOrchestrator'] = None
+visual_agent: Optional['VisualSearchAgent'] = None
+recommendation_agent: Optional['RecommendationAgent'] = None
+inventory_agent: Optional['InventoryAgent'] = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global orchestrator, visual_agent, recommendation_agent, inventory_agent
+    
+    try:
+        logger.info("Initializing AI agents...")
+        
+        orchestrator = ECommerceOrchestrator()
+        visual_agent = VisualSearchAgent()
+        recommendation_agent = RecommendationAgent()
+        inventory_agent = InventoryAgent()
+        
+        logger.info("All agents initialized successfully")
+        yield
+    except Exception as e:
+        logger.error(f"Failed to initialize agents: {str(e)}")
+        raise
+    finally:
+        logger.info("Shutting down AI agents...")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="E-Commerce AI Agent API",
     description="Multi-agent AI system for e-commerce operations",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Configure CORS
@@ -45,12 +73,6 @@ app.add_middleware(
 
 # Security
 security = HTTPBearer()
-
-# Global agent instances
-orchestrator: Optional[ECommerceOrchestrator] = None
-visual_agent: Optional[VisualSearchAgent] = None
-recommendation_agent: Optional[RecommendationAgent] = None
-inventory_agent: Optional[InventoryAgent] = None
 
 # Pydantic Models
 class CustomerQuery(BaseModel):
@@ -92,31 +114,6 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
         raise HTTPException(status_code=401, detail="Invalid API key")
     return credentials.credentials
 
-# Startup and shutdown events
-@app.on_event("startup")
-async def startup_event():
-    """Initialize agents on startup"""
-    global orchestrator, visual_agent, recommendation_agent, inventory_agent
-    
-    try:
-        logger.info("Initializing AI agents...")
-        
-        # Initialize all agents
-        orchestrator = ECommerceOrchestrator()
-        visual_agent = VisualSearchAgent()
-        recommendation_agent = RecommendationAgent()
-        inventory_agent = InventoryAgent()
-        
-        logger.info("All agents initialized successfully")
-        
-    except Exception as e:
-        logger.error(f"Failed to initialize agents: {str(e)}")
-        raise
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("Shutting down AI agents...")
 
 # Health check endpoint
 @app.get("/health")
